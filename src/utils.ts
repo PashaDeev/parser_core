@@ -15,7 +15,8 @@ const logger = debug('core: ');
 export type LoadContent = (
   url: string,
   headers?: RequestHeaders,
-  proxy?: string
+  proxy?: string,
+  noHeadless?: boolean
 ) => Promise<CheerioStatic | null>;
 
 export const loadUrlContent: LoadContent = async (url, headers, proxy) => {
@@ -39,23 +40,23 @@ export const loadUrlContent: LoadContent = async (url, headers, proxy) => {
 export const loadUrlContentWithBrowser: LoadContent = async (
   url,
   headers,
-  ip
+  ip,
+  noHeadless
 ): Promise<CheerioStatic | null> => {
-  let driver;
+  let driver = await new Builder().withCapabilities(Capabilities.firefox());
+
+  if (!noHeadless) {
+    driver = await new Builder()
+      .withCapabilities(Capabilities.firefox())
+      .setFirefoxOptions(new Options().headless());
+  }
 
   if (ip) {
-    driver = await new Builder()
-      .withCapabilities(Capabilities.firefox())
-      .setFirefoxOptions(new Options().headless())
-      // .setProxy(proxy.manual({ https: ip }))
-      .setProxy(proxy.socks(ip, 5))
-      .build();
-  } else {
-    driver = await new Builder()
-      .withCapabilities(Capabilities.firefox())
-      .setFirefoxOptions(new Options().headless())
-      .build();
+    driver = await driver.setProxy(proxy.socks(ip, 5));
   }
+
+  // @ts-ignore
+  driver = await driver.build();
 
   let str;
   try {

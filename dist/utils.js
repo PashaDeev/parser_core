@@ -38,22 +38,18 @@ exports.loadUrlContent = (url, headers, proxy) => __awaiter(void 0, void 0, void
     const resp = yield client.get(url);
     return cheerio_1.default.load(resp.data);
 });
-exports.loadUrlContentWithBrowser = (url, headers, ip) => __awaiter(void 0, void 0, void 0, function* () {
-    let driver;
+exports.loadUrlContentWithBrowser = (url, headers, ip, noHeadless) => __awaiter(void 0, void 0, void 0, function* () {
+    let driver = yield new selenium_webdriver_1.Builder().withCapabilities(selenium_webdriver_1.Capabilities.firefox());
+    if (!noHeadless) {
+        driver = yield new selenium_webdriver_1.Builder()
+            .withCapabilities(selenium_webdriver_1.Capabilities.firefox())
+            .setFirefoxOptions(new firefox_1.Options().headless());
+    }
     if (ip) {
-        const driver = yield new selenium_webdriver_1.Builder()
-            .withCapabilities(selenium_webdriver_1.Capabilities.firefox())
-            .setFirefoxOptions(new firefox_1.Options().headless())
-            // .setProxy(proxy.manual({ https: ip }))
-            .setProxy(proxy_1.default.socks(ip, 5))
-            .build();
+        driver = yield driver.setProxy(proxy_1.default.socks(ip, 5));
     }
-    else {
-        const driver = yield new selenium_webdriver_1.Builder()
-            .withCapabilities(selenium_webdriver_1.Capabilities.firefox())
-            .setFirefoxOptions(new firefox_1.Options().headless())
-            .build();
-    }
+    // @ts-ignore
+    driver = yield driver.build();
     let str;
     try {
         logger('page getting ...');
