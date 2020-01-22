@@ -37,7 +37,7 @@ class AbstractSpider {
     requestLimit = 3,
     triesLimit = 3,
     proxyHandler,
-    selector = ''
+    selector = '',
   }: SpiderConfig) {
     this.urls = urls;
     this.requestLimit = requestLimit;
@@ -58,17 +58,24 @@ class AbstractSpider {
     logger('start url requests');
 
     if (!Array.isArray(this.urls)) {
-      const response = await this.getUrl(this.urls, undefined, this.proxyHandler && this.proxyHandler.getAllProxies(), this.selector);
+      const response = await this.getUrl(
+        this.urls,
+        this.selector,
+        undefined,
+        this.proxyHandler && this.proxyHandler.getAllProxies()
+      );
       parser(response);
     }
 
     const pages: CheerioStatic[] = [];
 
     let mainResolve: any;
-    const mainPromise = new Promise(res => mainResolve = res);
+    const mainPromise = new Promise(res => (mainResolve = res));
 
-
-    const requester = async (url: string, reRequest?: boolean): Promise<void> => {
+    const requester = async (
+      url: string,
+      reRequest?: boolean
+    ): Promise<void> => {
       if (this.counter >= this.urls.length && !reRequest) return null;
       if (this.requests[url] && !reRequest) {
         this.counter++;
@@ -79,18 +86,16 @@ class AbstractSpider {
 
       return (this.requests[url] = this.getUrl(
         url,
+        this.selector,
         undefined,
-        this.proxyHandler.getAllProxies(),
-        this.selector
-      )
-        .then((data: CheerioStatic) => {
-          logger(`end request ${url}`);
-          this.counter++;
-          const newUrl = this.urls[this.counter];
-          requester(newUrl);
-          return data;
-        })
-      );
+        this.proxyHandler.getAllProxies()
+      ).then((data: CheerioStatic) => {
+        logger(`end request ${url}`);
+        this.counter++;
+        const newUrl = this.urls[this.counter];
+        requester(newUrl);
+        return data;
+      }));
     };
 
     while (this.counter < this.requestLimit) {
@@ -102,10 +107,10 @@ class AbstractSpider {
     await Promise.all(Object.values(this.requests));
 
     for (const url of this.urls) {
-      const page = await this.requests[url].then((data) => data);
+      const page = await this.requests[url].then(data => data);
       // const filteredPages = page.filter(Boolean);
       pages.push(page);
-    };
+    }
 
     logger('end url requests');
 

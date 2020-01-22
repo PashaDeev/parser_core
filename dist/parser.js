@@ -17,7 +17,7 @@ const utils_1 = require("./utils");
 const logger = debug_1.default('parser: ');
 const errorLogger = debug_1.default('parser error: ');
 class AbstractSpider {
-    constructor({ urls = [], requestLimit = 3, triesLimit = 3, proxyHandler, selector = '' }) {
+    constructor({ urls = [], requestLimit = 3, triesLimit = 3, proxyHandler, selector = '', }) {
         this.urls = urls;
         this.requestLimit = requestLimit;
         this.triesLimit = triesLimit;
@@ -34,12 +34,12 @@ class AbstractSpider {
             logger('start spider job');
             logger('start url requests');
             if (!Array.isArray(this.urls)) {
-                const response = yield this.getUrl(this.urls, undefined, this.proxyHandler && this.proxyHandler.getAllProxies(), this.selector);
+                const response = yield this.getUrl(this.urls, this.selector, undefined, this.proxyHandler && this.proxyHandler.getAllProxies());
                 parser(response);
             }
             const pages = [];
             let mainResolve;
-            const mainPromise = new Promise(res => mainResolve = res);
+            const mainPromise = new Promise(res => (mainResolve = res));
             const requester = (url, reRequest) => __awaiter(this, void 0, void 0, function* () {
                 if (this.counter >= this.urls.length && !reRequest)
                     return null;
@@ -48,8 +48,7 @@ class AbstractSpider {
                     return requester(this.urls[this.counter]);
                 }
                 logger(`start request ${url}`);
-                return (this.requests[url] = this.getUrl(url, undefined, this.proxyHandler.getAllProxies(), this.selector)
-                    .then((data) => {
+                return (this.requests[url] = this.getUrl(url, this.selector, undefined, this.proxyHandler.getAllProxies()).then((data) => {
                     logger(`end request ${url}`);
                     this.counter++;
                     const newUrl = this.urls[this.counter];
@@ -65,11 +64,10 @@ class AbstractSpider {
             }
             yield Promise.all(Object.values(this.requests));
             for (const url of this.urls) {
-                const page = yield this.requests[url].then((data) => data);
+                const page = yield this.requests[url].then(data => data);
                 // const filteredPages = page.filter(Boolean);
                 pages.push(page);
             }
-            ;
             logger('end url requests');
             logger('start parser job');
             yield parser(pages.filter(Boolean));
