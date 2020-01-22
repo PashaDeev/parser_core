@@ -89,6 +89,7 @@ export const loadUrlContentWithBrowser: LoadContent = async (
       logger('page getting ...');
       // @ts-ignore
       await driver.get(url);
+      logger(`wait for ${selector} selector`);
       // @ts-ignore
       await driver.wait(until.elementLocated(By.css(selector)), 20000);
       logger('html getting ...');

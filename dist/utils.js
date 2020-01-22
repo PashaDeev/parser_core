@@ -71,6 +71,7 @@ exports.loadUrlContentWithBrowser = (url, selector, headers, proxies = [null], n
             logger('page getting ...');
             // @ts-ignore
             yield driver.get(url);
+            logger(`wait for ${selector} selector`);
             // @ts-ignore
             yield driver.wait(selenium_webdriver_1.until.elementLocated(selenium_webdriver_1.By.css(selector)), 20000);
             logger('html getting ...');
