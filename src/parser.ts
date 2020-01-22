@@ -64,8 +64,14 @@ class AbstractSpider {
 
     const pages: CheerioStatic[] = [];
 
+    let mainResolve: any;
+    const mainPromise = new Promise(res => mainResolve = res);
+
+
     const requester = (url: string, reRequest?: boolean): Promise<void> => {
-      if (this.counter >= this.urls.length && !reRequest) return;
+      if (this.counter >= this.urls.length && !reRequest) {
+        return mainResolve();
+      };
       if (this.requests[url] && !reRequest) {
         this.counter++;
         return requester(this.urls[this.counter]);
@@ -82,9 +88,17 @@ class AbstractSpider {
         .then((data: CheerioStatic) => {
           logger(`end request ${url}`);
           if (!data) {
-            if (!this.proxyHandler) return null;
+            if (!this.proxyHandler) {
+              if (this.counter >= this.urls.length) {
+                mainResolve();
+              }
+              return null
+            };
             const isProxy = this.proxyHandler.updateProxy();
             if (!isProxy) {
+              if (this.counter >= this.urls.length) {
+                mainResolve();
+              }
               return errorLogger('end access proxy');
             }
             requester(url, true);
@@ -114,7 +128,7 @@ class AbstractSpider {
       this.counter++;
     }
 
-    await Promise.all(Object.values(this.requests));
+    await Promise.all([...Object.values(this.requests), mainPromise]);
 
     for (const url of this.urls) {
       const page = await this.requests[url].then((data) => data);
