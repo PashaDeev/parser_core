@@ -119,7 +119,7 @@ export class Spider extends AbstractSpider {
   }
 }
 
-class SeleniumSpider extends AbstractSpider {
+export class SeleniumSpider extends AbstractSpider {
   getUrl: LoadContent;
   constructor(config: SpiderConfig) {
     super(config);

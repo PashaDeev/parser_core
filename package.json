@@ -2,7 +2,7 @@
   "name": "parser_core",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.ts",
   "scripts": {
     "test": "tsc && DEBUG=parser*,proxy* mocha ./test"
   },
