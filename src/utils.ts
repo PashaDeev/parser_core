@@ -14,9 +14,10 @@ const logger = debug('core: ');
 
 export type LoadContent = (
   url: string,
+  selector: string,
   headers?: RequestHeaders,
   proxy?: string,
-  noHeadless?: boolean
+  noHeadless?: boolean,
 ) => Promise<CheerioStatic | null>;
 
 export const loadUrlContent: LoadContent = async (url, headers, proxy) => {
@@ -41,7 +42,8 @@ export const loadUrlContentWithBrowser: LoadContent = async (
   url,
   headers,
   ip,
-  noHeadless
+  noHeadless,
+  selector
 ): Promise<CheerioStatic | null> => {
   let driver = await new Builder().withCapabilities(Capabilities.firefox());
 
@@ -64,7 +66,7 @@ export const loadUrlContentWithBrowser: LoadContent = async (
     // @ts-ignore
     await driver.get(url);
     // @ts-ignore
-    await driver.wait(until.elementLocated(By.css('.pagination')), 20000);
+    await driver.wait(until.elementLocated(By.css(selector)), 20000);
     logger('html getting ...');
     // @ts-ignore
     str = await driver.findElement(By.css('body')).getAttribute('innerHTML');

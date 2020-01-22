@@ -12,13 +12,14 @@ const errorLogger = debug('parser error: ');
 
 interface SpiderConfig {
   urls: string[];
-  requestLimit: number;
-  triesLimit: number;
+  selector?: string;
+  requestLimit?: number;
+  triesLimit?: number;
   proxyHandler?: ProxyHandler;
 }
 
 type Requests = {
-  [item: string]: Promise<void>;
+  [item: string]: Promise<CheerioStatic>;
 };
 
 class AbstractSpider {
@@ -29,17 +30,20 @@ class AbstractSpider {
   counter: number;
   requests: Requests;
   proxyHandler: ProxyHandler;
+  selector: string;
 
   constructor({
     urls = [],
     requestLimit = 3,
     triesLimit = 3,
     proxyHandler,
+    selector = ''
   }: SpiderConfig) {
     this.urls = urls;
     this.requestLimit = requestLimit;
     this.triesLimit = triesLimit;
     this.counter = 0;
+    this.selector = selector;
 
     this.requests = {};
 
@@ -54,7 +58,7 @@ class AbstractSpider {
     logger('start url requests');
 
     if (!Array.isArray(this.urls)) {
-      const response = await this.getUrl(this.urls);
+      const response = await this.getUrl(this.urls, undefined, this.proxyHandler && this.proxyHandler.get(), this.selector);
       parser(response);
     }
 
@@ -72,14 +76,15 @@ class AbstractSpider {
       return (this.requests[url] = this.getUrl(
         url,
         undefined,
-        this.proxyHandler.get()
+        this.proxyHandler.get(),
+        this.selector
       )
         .then((data: CheerioStatic) => {
           logger(`end request ${url}`);
           this.counter++;
           const newUrl = this.urls[this.counter];
           requester(newUrl);
-          pages.push(data);
+          // pages.push(data);
           return data;
         })
         .catch((err: Error) => {
@@ -101,6 +106,11 @@ class AbstractSpider {
     }
 
     await Promise.all(Object.values(this.requests));
+
+    for (const url of this.urls) {
+      const page = await this.requests[url].then((data) => data);
+      pages.push(page);
+    };
 
     logger('end url requests');
 
