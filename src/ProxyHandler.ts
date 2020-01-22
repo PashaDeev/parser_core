@@ -6,6 +6,27 @@ const logger = debug('proxy handler: ');
 
 type Proxy = [string, string];
 
+class Clone {
+  proxies: Proxy[];
+  currentIndex: number;
+
+  constructor(proxies: Proxy[]) {
+    this.proxies = proxies;
+    this.currentIndex = 0;
+  }
+
+  updateProxy(): boolean {
+    this.currentIndex++;
+    logger(`use proxy: ${this.get()}`);
+    return this.currentIndex < this.proxies.length;
+  }
+
+  get(): string {
+    if (this.currentIndex >= this.proxies.length) return null;
+    return this.proxies[this.currentIndex].join(':');
+  }
+}
+
 export class ProxyHandler {
   private proxies: Proxy[];
   private currentIndex: number;
@@ -31,5 +52,9 @@ export class ProxyHandler {
 
   getAllProxies(): Proxy[] {
     return this.proxies;
+  }
+
+  getClone() {
+    return new Clone(this.proxies);
   }
 }
