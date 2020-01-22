@@ -44,14 +44,14 @@ export const loadUrlContentWithBrowser: LoadContent = async (
   let driver;
 
   if (ip) {
-    const driver = await new Builder()
+    driver = await new Builder()
       .withCapabilities(Capabilities.firefox())
       .setFirefoxOptions(new Options().headless())
       // .setProxy(proxy.manual({ https: ip }))
       .setProxy(proxy.socks(ip, 5))
       .build();
   } else {
-    const driver = await new Builder()
+    driver = await new Builder()
       .withCapabilities(Capabilities.firefox())
       .setFirefoxOptions(new Options().headless())
       .build();
