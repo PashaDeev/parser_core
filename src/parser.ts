@@ -81,6 +81,15 @@ class AbstractSpider {
       )
         .then((data: CheerioStatic) => {
           logger(`end request ${url}`);
+          if (!data) {
+            if (!this.proxyHandler) return null;
+            const isProxy = this.proxyHandler.updateProxy();
+            if (!isProxy) {
+              return errorLogger('end access proxy');
+            }
+            requester(url, true);
+            return null;
+          }
           this.counter++;
           const newUrl = this.urls[this.counter];
           requester(newUrl);
