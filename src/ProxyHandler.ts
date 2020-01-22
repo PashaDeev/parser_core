@@ -3,6 +3,7 @@ import { parse as csvParse } from 'csv/lib/sync';
 import debug from 'debug';
 
 const logger = debug('proxy handler: ');
+logger.log = console.log.bind(console);
 
 type Proxy = [string, string];
 

@@ -15,7 +15,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const debug_1 = __importDefault(require("debug"));
 const utils_1 = require("./utils");
 const logger = debug_1.default('parser: ');
+logger.log = console.log.bind(console);
 const errorLogger = debug_1.default('parser error: ');
+errorLogger.log = console.log.bind(console);
 class AbstractSpider {
     constructor({ urls = [], requestLimit = 3, triesLimit = 3, proxyHandler, selector = '', }) {
         this.urls = urls;

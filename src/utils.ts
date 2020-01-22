@@ -14,6 +14,7 @@ import cheerio from 'cheerio';
 const seleniumProxy = proxy;
 
 const logger = debug('core: ');
+logger.log = console.log.bind(console);
 
 export type LoadContent = (
   url: string,

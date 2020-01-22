@@ -7,6 +7,7 @@ const fs_extra_1 = require("fs-extra");
 const sync_1 = require("csv/lib/sync");
 const debug_1 = __importDefault(require("debug"));
 const logger = debug_1.default('proxy handler: ');
+logger.log = console.log.bind(console);
 class ProxyHandler {
     constructor(pathToProxyFile) {
         this.currentIndex = 0;

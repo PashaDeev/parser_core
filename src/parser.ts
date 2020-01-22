@@ -8,7 +8,9 @@ import {
 } from './utils';
 
 const logger = debug('parser: ');
+logger.log = console.log.bind(console);
 const errorLogger = debug('parser error: ');
+errorLogger.log = console.log.bind(console);
 
 interface SpiderConfig {
   urls: string[];

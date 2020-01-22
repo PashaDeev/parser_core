@@ -23,6 +23,7 @@ const debug_1 = __importDefault(require("debug"));
 const cheerio_1 = __importDefault(require("cheerio"));
 const seleniumProxy = proxy_1.default;
 const logger = debug_1.default('core: ');
+logger.log = console.log.bind(console);
 exports.loadUrlContent = (url, selector = '', headers, proxies = [null]) => __awaiter(void 0, void 0, void 0, function* () {
     // await new Promise(res => setTimeout(() => res(), 1500));
     let i = 0;
