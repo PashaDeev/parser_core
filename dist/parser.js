@@ -89,7 +89,6 @@ exports.Spider = Spider;
 class SeleniumSpider extends AbstractSpider {
     constructor(config) {
         super(config);
-        console.log(config);
         this.getUrl = utils_1.loadUrlContentWithBrowser;
     }
 }
