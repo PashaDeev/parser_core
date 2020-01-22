@@ -58,7 +58,7 @@ class AbstractSpider {
     logger('start url requests');
 
     if (!Array.isArray(this.urls)) {
-      const response = await this.getUrl(this.urls, undefined, this.proxyHandler && this.proxyHandler.getClone(), this.selector);
+      const response = await this.getUrl(this.urls, undefined, this.proxyHandler && this.proxyHandler.getAllProxies(), this.selector);
       parser(response);
     }
 
@@ -69,23 +69,7 @@ class AbstractSpider {
 
 
     const requester = async (url: string, reRequest?: boolean): Promise<void> => {
-      if (this.counter >= this.urls.length && !reRequest) {
-        if (url === this.urls[this.urls.length - 1]) {
-          await Promise.all([...Object.values(this.requests), mainPromise]);
-
-          for (const url of this.urls) {
-            const page = await this.requests[url].then((data) => data);
-            pages.push(page);
-          };
-
-          logger('end url requests');
-
-          logger('start parser job');
-          await parser(pages);
-          logger('end parser job');
-        }
-        return;
-      };
+      if (this.counter >= this.urls.length && !reRequest) return null;
       if (this.requests[url] && !reRequest) {
         this.counter++;
         return requester(this.urls[this.counter]);
@@ -96,44 +80,16 @@ class AbstractSpider {
       return (this.requests[url] = this.getUrl(
         url,
         undefined,
-        this.proxyHandler.getClone(),
+        this.proxyHandler.getAllProxies(),
         this.selector
       )
         .then((data: CheerioStatic) => {
           logger(`end request ${url}`);
-          // if (!data) {
-          //   if (!this.proxyHandler) {
-          //     if (this.counter >= this.urls.length) {
-          //       mainResolve();
-          //     }
-          //     return null
-          //   };
-          //   const isProxy = this.proxyHandler.updateProxy();
-          //   if (!isProxy) {
-          //     if (this.counter >= this.urls.length) {
-          //       mainResolve();
-          //     }
-          //     return errorLogger('end access proxy');
-          //   }
-          //   requester(url, true);
-          //   return null;
-          // }
           this.counter++;
           const newUrl = this.urls[this.counter];
           requester(newUrl);
-          // pages.push(data);
           return data;
         })
-        // .catch((err: Error) => {
-        //   errorLogger('ошибка запроса');
-        //   if (!this.proxyHandler) return;
-        //   const isProxy = this.proxyHandler.updateProxy();
-        //   if (!isProxy) {
-        //     console.log('err', err)
-        //     return errorLogger('end access proxy');
-        //   }
-        //   requester(url, true);
-        // })
       );
     };
 
@@ -142,6 +98,20 @@ class AbstractSpider {
       requester(this.urls[this.counter]);
       this.counter++;
     }
+
+    await Promise.all(Object.values(this.requests));
+
+    for (const url of this.urls) {
+      const page = await this.requests[url].then((data) => data);
+      // const filteredPages = page.filter(Boolean);
+      pages.push(page);
+    };
+
+    logger('end url requests');
+
+    logger('start parser job');
+    await parser(pages.filter(Boolean));
+    logger('end parser job');
   }
 }
 

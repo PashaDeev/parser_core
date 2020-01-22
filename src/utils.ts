@@ -11,13 +11,15 @@ import { ProxyHandler } from './ProxyHandler';
 import { RequestHeaders } from './types';
 import cheerio from 'cheerio';
 
+const seleniumProxy = proxy;
+
 const logger = debug('core: ');
 
 export type LoadContent = (
   url: string,
   selector: string,
   headers?: RequestHeaders,
-  proxyhandler?: ProxyHandler,
+  proxies?: string[],
   noHeadless?: boolean
 ) => Promise<CheerioStatic | null>;
 
@@ -25,17 +27,17 @@ export const loadUrlContent: LoadContent = async (
   url,
   selector = '',
   headers,
-  proxyHandler
+  proxies = [null]
 ) => {
   // await new Promise(res => setTimeout(() => res(), 1500));
+  let i = 0;
+  while (i < proxies.length) {
+      const proxy = proxies[i];
+      logger(`request with proxy: ${proxy}`);
 
-  let resp;
-
-  while (!resp && proxyHandler.get()) {
-    let client;
-    try {
+      let client;
       if (proxy) {
-        const proxyFull = `socks5://${proxy.get()}`;
+        const proxyFull = `socks5://${proxy}`;
         const httpsAgent = new SocksProxyAgent(proxyFull);
 
         // client = axios.create({ httpsAgent, headers });
@@ -44,41 +46,46 @@ export const loadUrlContent: LoadContent = async (
         // client = axios.create({ headers });
         client = axios.create();
       }
+
+    try {
+      const resp = await client.get(url);
+      return cheerio.load(resp.data);
     } catch (err) {
-      proxyHandler.updateProxy();
-      continue;
+      i++;
     }
-    resp = await client.get(url);
   }
-  return cheerio.load(resp.data) || null;
+  return null;
 };
 
 export const loadUrlContentWithBrowser: LoadContent = async (
   url,
   selector,
   headers,
-  proxyHandler,
-  noHeadless
+  proxies = [null],
+  noHeadless,
 ): Promise<CheerioStatic | null> => {
-  let resp;
-  while (!resp && proxyHandler.get()) {
+  let i = 0;
+
+  while (i < proxies.length) {
+    const proxy = proxies[i];
+    logger(`request with proxy: ${proxy}`);
+    let driver = await new Builder().withCapabilities(Capabilities.firefox());
+
+    if (!noHeadless) {
+      driver = await new Builder()
+        .withCapabilities(Capabilities.firefox())
+        .setFirefoxOptions(new Options().headless());
+    }
+
+    if (proxy) {
+      driver = await driver.setProxy(seleniumProxy.socks(proxy, 5));
+    }
+
+    // @ts-ignore
+    driver = await driver.build();
+
+    let str;
     try {
-      let driver = await new Builder().withCapabilities(Capabilities.firefox());
-
-      if (!noHeadless) {
-        driver = await new Builder()
-          .withCapabilities(Capabilities.firefox())
-          .setFirefoxOptions(new Options().headless());
-      }
-
-      if (proxyHandler.get()) {
-        driver = await driver.setProxy(proxy.socks(proxyHandler.get(), 5));
-      }
-
-      // @ts-ignore
-      driver = await driver.build();
-
-      let str;
       logger('page getting ...');
       // @ts-ignore
       await driver.get(url);
@@ -87,15 +94,15 @@ export const loadUrlContentWithBrowser: LoadContent = async (
       logger('html getting ...');
       // @ts-ignore
       str = await driver.findElement(By.css('body')).getAttribute('innerHTML');
-      return str ? cheerio.load(str) : null;
+      return cheerio.load(str);
     } catch (err) {
       if (err.name !== 'TimeoutError') {
         logger(err);
       }
-      proxyHandler.updateProxy();
+      i++;
+    } finally {
       // @ts-ignore
       await driver.quit();
-      continue;
     }
   }
   return null;

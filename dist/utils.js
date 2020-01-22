@@ -21,55 +21,74 @@ const firefox_1 = require("selenium-webdriver/firefox");
 const axios_1 = __importDefault(require("axios"));
 const debug_1 = __importDefault(require("debug"));
 const cheerio_1 = __importDefault(require("cheerio"));
+const seleniumProxy = proxy_1.default;
 const logger = debug_1.default('core: ');
-exports.loadUrlContent = (url, headers, proxy) => __awaiter(void 0, void 0, void 0, function* () {
+exports.loadUrlContent = (url, selector = '', headers, proxies = [null]) => __awaiter(void 0, void 0, void 0, function* () {
     // await new Promise(res => setTimeout(() => res(), 1500));
-    let client;
-    if (proxy) {
-        const proxyFull = `socks5://${proxy}`;
-        const httpsAgent = new socks_proxy_agent_1.default(proxyFull);
-        // client = axios.create({ httpsAgent, headers });
-        client = axios_1.default.create({ httpsAgent });
-    }
-    else {
-        // client = axios.create({ headers });
-        client = axios_1.default.create();
-    }
-    const resp = yield client.get(url);
-    return cheerio_1.default.load(resp.data);
-});
-exports.loadUrlContentWithBrowser = (url, headers, ip, noHeadless) => __awaiter(void 0, void 0, void 0, function* () {
-    let driver = yield new selenium_webdriver_1.Builder().withCapabilities(selenium_webdriver_1.Capabilities.firefox());
-    if (!noHeadless) {
-        driver = yield new selenium_webdriver_1.Builder()
-            .withCapabilities(selenium_webdriver_1.Capabilities.firefox())
-            .setFirefoxOptions(new firefox_1.Options().headless());
-    }
-    if (ip) {
-        driver = yield driver.setProxy(proxy_1.default.socks(ip, 5));
-    }
-    // @ts-ignore
-    driver = yield driver.build();
-    let str;
-    try {
-        logger('page getting ...');
-        // @ts-ignore
-        yield driver.get(url);
-        // @ts-ignore
-        yield driver.wait(selenium_webdriver_1.until.elementLocated(selenium_webdriver_1.By.css('.pagination')), 20000);
-        logger('html getting ...');
-        // @ts-ignore
-        str = yield driver.findElement(selenium_webdriver_1.By.css('body')).getAttribute('innerHTML');
-    }
-    catch (err) {
-        if (err.name !== 'TimeoutError') {
-            logger(err);
+    let i = 0;
+    while (i < proxies.length) {
+        const proxy = proxies[i];
+        logger(`request with proxy: ${proxy}`);
+        let client;
+        if (proxy) {
+            const proxyFull = `socks5://${proxy}`;
+            const httpsAgent = new socks_proxy_agent_1.default(proxyFull);
+            // client = axios.create({ httpsAgent, headers });
+            client = axios_1.default.create({ httpsAgent });
+        }
+        else {
+            // client = axios.create({ headers });
+            client = axios_1.default.create();
+        }
+        try {
+            const resp = yield client.get(url);
+            return cheerio_1.default.load(resp.data);
+        }
+        catch (err) {
+            i++;
         }
     }
-    finally {
+    return null;
+});
+exports.loadUrlContentWithBrowser = (url, selector, headers, proxies = [null], noHeadless) => __awaiter(void 0, void 0, void 0, function* () {
+    let i = 0;
+    while (i < proxies.length) {
+        const proxy = proxies[i];
+        logger(`request with proxy: ${proxy}`);
+        let driver = yield new selenium_webdriver_1.Builder().withCapabilities(selenium_webdriver_1.Capabilities.firefox());
+        if (!noHeadless) {
+            driver = yield new selenium_webdriver_1.Builder()
+                .withCapabilities(selenium_webdriver_1.Capabilities.firefox())
+                .setFirefoxOptions(new firefox_1.Options().headless());
+        }
+        if (proxy) {
+            driver = yield driver.setProxy(seleniumProxy.socks(proxy, 5));
+        }
         // @ts-ignore
-        yield driver.quit();
+        driver = yield driver.build();
+        let str;
+        try {
+            logger('page getting ...');
+            // @ts-ignore
+            yield driver.get(url);
+            // @ts-ignore
+            yield driver.wait(selenium_webdriver_1.until.elementLocated(selenium_webdriver_1.By.css(selector)), 20000);
+            logger('html getting ...');
+            // @ts-ignore
+            str = yield driver.findElement(selenium_webdriver_1.By.css('body')).getAttribute('innerHTML');
+            return cheerio_1.default.load(str);
+        }
+        catch (err) {
+            if (err.name !== 'TimeoutError') {
+                logger(err);
+            }
+            i++;
+        }
+        finally {
+            // @ts-ignore
+            yield driver.quit();
+        }
     }
-    return str ? cheerio_1.default.load(str) : null;
+    return null;
 });
 //# sourceMappingURL=utils.js.map

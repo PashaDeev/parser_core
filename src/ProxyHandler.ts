@@ -6,35 +6,14 @@ const logger = debug('proxy handler: ');
 
 type Proxy = [string, string];
 
-class Clone {
-  proxies: Proxy[];
-  currentIndex: number;
-
-  constructor(proxies: Proxy[]) {
-    this.proxies = proxies;
-    this.currentIndex = 0;
-  }
-
-  updateProxy(): boolean {
-    this.currentIndex++;
-    logger(`use proxy: ${this.get()}`);
-    return this.currentIndex < this.proxies.length;
-  }
-
-  get(): string {
-    if (this.currentIndex >= this.proxies.length) return null;
-    return this.proxies[this.currentIndex].join(':');
-  }
-}
-
 export class ProxyHandler {
-  private proxies: Proxy[];
+  private proxies: string[];
   private currentIndex: number;
 
   constructor(pathToProxyFile: string) {
     this.currentIndex = 0;
     const file = readFileSync(pathToProxyFile);
-    this.proxies = csvParse(file);
+    this.proxies = csvParse(file).map((item: Proxy) => item.join(':'));
 
     logger(`use proxy: ${this.get()}`)
   }
@@ -47,14 +26,10 @@ export class ProxyHandler {
 
   get(): string {
     if (this.currentIndex >= this.proxies.length) return null;
-    return this.proxies[this.currentIndex].join(':');
+    return this.proxies[this.currentIndex];
   }
 
-  getAllProxies(): Proxy[] {
+  getAllProxies(): string[] {
     return this.proxies;
-  }
-
-  getClone() {
-    return new Clone(this.proxies);
   }
 }

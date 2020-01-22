@@ -17,11 +17,12 @@ const utils_1 = require("./utils");
 const logger = debug_1.default('parser: ');
 const errorLogger = debug_1.default('parser error: ');
 class AbstractSpider {
-    constructor({ urls = [], requestLimit = 3, triesLimit = 3, proxyHandler, }) {
+    constructor({ urls = [], requestLimit = 3, triesLimit = 3, proxyHandler, selector = '' }) {
         this.urls = urls;
         this.requestLimit = requestLimit;
         this.triesLimit = triesLimit;
         this.counter = 0;
+        this.selector = selector;
         this.requests = {};
         this.getUrl = () => {
             throw new Error('нужно определить тип загрзчика');
@@ -33,39 +34,29 @@ class AbstractSpider {
             logger('start spider job');
             logger('start url requests');
             if (!Array.isArray(this.urls)) {
-                const response = yield this.getUrl(this.urls);
+                const response = yield this.getUrl(this.urls, undefined, this.proxyHandler && this.proxyHandler.getAllProxies(), this.selector);
                 parser(response);
             }
             const pages = [];
-            const requester = (url, reRequest) => {
+            let mainResolve;
+            const mainPromise = new Promise(res => mainResolve = res);
+            const requester = (url, reRequest) => __awaiter(this, void 0, void 0, function* () {
                 if (this.counter >= this.urls.length && !reRequest)
-                    return;
+                    return null;
                 if (this.requests[url] && !reRequest) {
                     this.counter++;
                     return requester(this.urls[this.counter]);
                 }
                 logger(`start request ${url}`);
-                return (this.requests[url] = this.getUrl(url, undefined, this.proxyHandler.get())
+                return (this.requests[url] = this.getUrl(url, undefined, this.proxyHandler.getAllProxies(), this.selector)
                     .then((data) => {
                     logger(`end request ${url}`);
                     this.counter++;
                     const newUrl = this.urls[this.counter];
                     requester(newUrl);
-                    pages.push(data);
                     return data;
-                })
-                    .catch((err) => {
-                    errorLogger('ошибка запроса');
-                    if (!this.proxyHandler)
-                        return;
-                    const isProxy = this.proxyHandler.updateProxy();
-                    if (!isProxy) {
-                        console.log('err', err);
-                        return errorLogger('end access proxy');
-                    }
-                    requester(url, true);
                 }));
-            };
+            });
             while (this.counter < this.requestLimit) {
                 if (this.counter >= this.urls.length)
                     break;
@@ -73,9 +64,15 @@ class AbstractSpider {
                 this.counter++;
             }
             yield Promise.all(Object.values(this.requests));
+            for (const url of this.urls) {
+                const page = yield this.requests[url].then((data) => data);
+                // const filteredPages = page.filter(Boolean);
+                pages.push(page);
+            }
+            ;
             logger('end url requests');
             logger('start parser job');
-            yield parser(pages);
+            yield parser(pages.filter(Boolean));
             logger('end parser job');
         });
     }
