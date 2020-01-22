@@ -23,6 +23,10 @@ class AbstractSpider {
         this.triesLimit = triesLimit;
         this.counter = 0;
         this.selector = selector;
+        logger('create spider with params:');
+        logger(`urls: ${this.urls}`);
+        logger(`selector: ${this.selector}`);
+        logger(`request limit ${this.requestLimit}`);
         this.requests = {};
         this.getUrl = () => {
             throw new Error('нужно определить тип загрзчика');
