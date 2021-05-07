@@ -31,7 +31,7 @@
     "fs-extra": "8.1.0",
     "selenium-webdriver": "4.0.0-alpha.5",
     "socks-proxy-agent": "4.0.2",
-    "underscore": "1.9.1"
+    "underscore": "1.12.1"
   },
   "prettier": {
     "trailingComma": "es5",
